@@ -1,0 +1,13 @@
+{
+  "name": "NexusChat",
+  "short_name": "NexusChat",
+  "description": "Real-time chat, random matching, private rooms",
+  "start_url": "/views/dashboard.html",
+  "display": "standalone",
+  "background_color": "#07080f",
+  "theme_color": "#7C6FFF",
+  "icons": [
+    { "src": "https://ui-avatars.com/api/?name=N&background=7C6FFF&color=fff&bold=true&size=192", "sizes": "192x192", "type": "image/png" },
+    { "src": "https://ui-avatars.com/api/?name=N&background=7C6FFF&color=fff&bold=true&size=512", "sizes": "512x512", "type": "image/png" }
+  ]
+}

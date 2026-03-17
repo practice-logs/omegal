@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Choose Username – NexusChat</title>
+<link rel="stylesheet" href="../css/style.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="auth-page">
+<div class="bg-blobs"><div class="blob b1"></div><div class="blob b2"></div></div>
+<div class="auth-box">
+  <div class="auth-logo">
+    <div class="auth-logo-ico" style="font-size:1.4rem;animation:glowPulse 2s ease-in-out infinite;">✨</div>
+    <div class="auth-logo-name">One Last Step!</div>
+    <div class="auth-logo-sub">Choose your identity on NexusChat</div>
+  </div>
+  <h2 class="auth-h">Pick a username</h2>
+  <p class="auth-sub">This is how the community sees you. You can change it once every 30 days.</p>
+  <div class="alert alert-err" id="err"><i class="fas fa-exclamation-circle"></i><span id="errtxt"></span></div>
+  <!-- Avatar -->
+  <div style="text-align:center;margin-bottom:1.3rem;">
+    <div style="position:relative;width:80px;margin:0 auto .5rem;cursor:pointer;" onclick="document.getElementById('avaf').click()">
+      <div style="width:80px;height:80px;border-radius:50%;overflow:hidden;border:3px solid var(--accent);box-shadow:0 0 18px var(--glow);">
+        <img id="ava-prev" src="https://ui-avatars.com/api/?name=?&background=7C6FFF&color=fff&bold=true&size=80" style="width:100%;height:100%;object-fit:cover;display:block;"/>
+      </div>
+      <div style="position:absolute;bottom:2px;right:2px;width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.72rem;color:#fff;border:2px solid var(--panel);"><i class="fas fa-camera"></i></div>
+    </div>
+    <input type="file" id="avaf" accept="image/*" style="display:none" onchange="previewAva(event)"/>
+    <div style="font-size:.74rem;color:var(--textD);">Click to upload profile photo</div>
+  </div>
+  <div class="inp-group">
+    <label><i class="fas fa-at"></i> Username</label>
+    <div class="inp-wrap"><i class="fas fa-at ico"></i><input class="inp" type="text" id="un" placeholder="e.g. cool_coder99" maxlength="20" autocomplete="off" oninput="onUN()"/></div>
+    <div class="fnote" id="unc"></div>
+  </div>
+  <div style="background:var(--bg3);border-radius:var(--rSm);padding:.7rem .9rem;margin-bottom:1.3rem;font-size:.78rem;color:var(--textM);line-height:1.6;">
+    <i class="fas fa-info-circle" style="color:var(--accent);"></i>&nbsp;<strong style="color:var(--text)">Rules:</strong> 4–20 characters · Letters, numbers & underscores only · No spaces · Must be unique
+  </div>
+  <button class="btn btn-primary w-full" id="savebtn" onclick="saveUN()" disabled>
+    <i class="fas fa-rocket"></i> Enter NexusChat
+  </button>
+</div>
+<div id="toast-box"></div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getDatabase,ref,get,set}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const cfg={apiKey:"AIzaSyBeT226lzGP0ERDY7QZhKF8zfo0OwSGEZ4",authDomain:"fir-50409.firebaseapp.com",databaseURL:"https://fir-50409-default-rtdb.firebaseio.com",projectId:"fir-50409",storageBucket:"fir-50409.firebasestorage.app",messagingSenderId:"336958746825",appId:"1:336958746825:web:dc23031418217663b85d18"};
+const app=initializeApp(cfg),auth=getAuth(app),db=getDatabase(app);
+const st=localStorage.getItem('nc_theme')||'dark';document.documentElement.setAttribute('data-theme',st);
+let me=null,unValid=false,unTO=null,uploadedB64=null;
+onAuthStateChanged(auth,async u=>{if(!u){location.href='login.html';return;}me=u;const s=await get(ref(db,`users/${u.uid}/username`));if(s.exists())location.href='../views/dashboard.html';});
+window.previewAva=(e)=>{const f=e.target.files[0];if(!f)return;if(f.size>1.2*1024*1024){alert('Image too large. Max 1.2MB.');return;}const r=new FileReader();r.onload=ev=>{uploadedB64=ev.target.result;document.getElementById('ava-prev').src=uploadedB64;};r.readAsDataURL(f);};
+window.onUN=()=>{
+  const v=document.getElementById('un').value.trim(),c=document.getElementById('unc'),btn=document.getElementById('savebtn');
+  unValid=false;btn.disabled=true;clearTimeout(unTO);
+  if(!uploadedB64){const cols=['7C6FFF','FF5FA0','3EEDCF','FFB84D','4ADE80'];const col=v?cols[v.charCodeAt(0)%cols.length]:'7C6FFF';document.getElementById('ava-prev').src=`https://ui-avatars.com/api/?name=${encodeURIComponent(v||'?')}&background=${col}&color=fff&bold=true&size=80`;}
+  if(!v){c.textContent='';c.className='fnote';return;}
+  if(!/^[a-zA-Z0-9_]+$/.test(v)){c.innerHTML='<i class="fas fa-times-circle"></i> Only letters, numbers, underscores';c.className='fnote err';return;}
+  if(v.length<4){c.innerHTML='<i class="fas fa-times-circle"></i> Minimum 4 characters';c.className='fnote err';return;}
+  c.innerHTML='<span class="spin spin-accent" style="width:12px;height:12px;border-width:2px;"></span> Checking...';c.className='fnote chk';
+  unTO=setTimeout(async()=>{
+    const s=await get(ref(db,`usernames/${v.toLowerCase()}`));
+    if(s.exists()){c.innerHTML='<i class="fas fa-times-circle"></i> Username already taken';c.className='fnote err';}
+    else{c.innerHTML='<i class="fas fa-check-circle"></i> Available!';c.className='fnote ok';unValid=true;btn.disabled=false;}
+  },480);
+};
+window.saveUN=async()=>{
+  if(!unValid||!me)return;
+  const un=document.getElementById('un').value.trim(),btn=document.getElementById('savebtn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Saving...';
+  const cols=['7C6FFF','FF5FA0','3EEDCF','FFB84D','4ADE80'];
+  const col=cols[un.charCodeAt(0)%cols.length];
+  const finalAva=uploadedB64||`https://ui-avatars.com/api/?name=${encodeURIComponent(un)}&background=${col}&color=fff&bold=true&size=80`;
+  try{
+    await set(ref(db,`usernames/${un.toLowerCase()}`),me.uid);
+    await set(ref(db,`users/${me.uid}`),{username:un,avatar:finalAva,avatarCustom:!!uploadedB64,email:me.email,bio:'',statusMsg:'👋 Hey there! I\'m new to NexusChat.',status:'online',searchable:true,createdAt:Date.now(),unLastChanged:Date.now()});
+    location.href='../views/dashboard.html';
+  }catch{btn.disabled=false;btn.innerHTML='<i class="fas fa-rocket"></i> Enter NexusChat';document.getElementById('errtxt').textContent='Failed to save. Try again.';document.getElementById('err').classList.add('show');}
+};
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!document.getElementById('savebtn').disabled)window.saveUN();});
+</script>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>NexusChat — Random Match</title>
+<link rel="stylesheet" href="../css/themes.css"/>
+<link rel="stylesheet" href="../css/base.css"/>
+<link rel="stylesheet" href="../css/components.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;overflow:hidden;}
+.top-bar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 1.2rem;gap:.8rem;flex-shrink:0;z-index:50;position:relative;}
+.top-bar-logo{display:flex;align-items:center;gap:.45rem;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;text-decoration:none;color:inherit;}
+.top-bar-logo .ico{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#fff;}
+.top-bar-logo .txt{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sep{width:1px;height:24px;background:var(--border2);}
+.top-bar-title{font-size:.9rem;font-weight:700;}
+.top-bar-right{margin-left:auto;}
+.page-body{height:calc(100vh - 56px);overflow:hidden;display:flex;flex-direction:column;}
+
+/* ── Idle screen ── */
+.mscreen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.9rem;padding:2rem;text-align:center;}
+.mode-row{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;margin-top:.4rem;}
+.mode-card{background:var(--panel);border:1.5px solid var(--border2);border-radius:var(--r);padding:1.6rem 1.4rem;width:200px;cursor:pointer;transition:all .22s;text-align:center;}
+.mode-card:hover{transform:translateY(-4px);}
+.mode-card.chat-card:hover{border-color:var(--accent);box-shadow:0 10px 30px var(--glow);}
+.mode-card.vid-card:hover{border-color:var(--accent2);box-shadow:0 10px 30px var(--glow2);}
+.mode-ico{width:60px;height:60px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto .9rem;}
+.mode-lbl{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;margin-bottom:.3rem;}
+.mode-sub{font-size:.76rem;color:var(--textM);}
+
+/* ── Searching screen ── */
+#rSearching{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:.9rem;padding:2rem;text-align:center;}
+.search-orb{width:100px;height:100px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;background:linear-gradient(135deg,var(--accent),var(--accent2));animation:glowPulse 2s ease-in-out infinite,spin2 4s linear infinite;margin-bottom:.5rem;}
+.mtimer{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:800;color:var(--accent);}
+.mlbl{color:var(--textM);font-size:.9rem;}
+
+/* ── Chat match screen ── */
+#rChatMatch{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.rand-header{background:var(--bg2);border-bottom:1px solid var(--border2);padding:.65rem 1rem;display:flex;align-items:center;gap:.8rem;flex-shrink:0;}
+.rand-badge{display:flex;align-items:center;gap:.38rem;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:var(--rPill);padding:.22rem .7rem;font-size:.73rem;font-weight:700;color:var(--ok);}
+.rand-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:pulse 1.2s ease infinite;}
+.rand-actions{margin-left:auto;display:flex;gap:.4rem;}
+.msgs-area{flex:1;overflow-y:auto;padding:1rem;}
+.tbar-rand{min-height:24px;padding:0 1rem;font-size:.78rem;color:var(--textM);}
+.td{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--textM);margin-right:2px;animation:tdBounce 1.2s ease infinite;}
+.td:nth-child(2){animation-delay:.15s;}.td:nth-child(3){animation-delay:.3s;}
+.inp-area{padding:.7rem 1rem;border-top:1px solid var(--border2);display:flex;gap:.5rem;align-items:flex-end;flex-shrink:0;}
+.chat-ta{flex:1;background:var(--panel);border:1.5px solid var(--border2);border-radius:var(--rSm);padding:.6rem .9rem;color:var(--text);font-family:inherit;font-size:.88rem;resize:none;outline:none;max-height:120px;line-height:1.5;transition:border-color .15s;}
+.chat-ta:focus{border-color:var(--accent);}
+.snd-btn{width:38px;height:38px;border-radius:50%;background:var(--accent);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.88rem;transition:all .15s;}
+.snd-btn:hover{background:var(--accentH);}
+/* Message bubbles */
+.mg{display:flex;gap:.55rem;margin-bottom:.7rem;animation:msgIn .2s ease;}
+.mg.own{flex-direction:row-reverse;}
+.mava-sm{width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;}
+.mava-sm img{width:100%;height:100%;object-fit:cover;}
+.mbody-sm{max-width:70%;}
+.mmeta-sm{font-size:.72rem;color:var(--textM);margin-bottom:.18rem;display:flex;gap:.4rem;align-items:center;}
+.mg.own .mmeta-sm{justify-content:flex-end;}
+.bbl-rand{padding:.55rem .85rem;border-radius:0 var(--rSm) var(--rSm) var(--rSm);background:var(--panel);font-size:.86rem;line-height:1.5;word-break:break-word;border:1px solid var(--border2);}
+.mg.own .bbl-rand{background:linear-gradient(135deg,rgba(124,111,255,.2),rgba(168,85,247,.15));border-radius:var(--rSm) 0 var(--rSm) var(--rSm);}
+.smsg-r{text-align:center;font-size:.8rem;color:var(--textD);padding:.7rem;display:flex;align-items:center;justify-content:center;gap:.5rem;}
+
+/* ── Video match ── */
+#rVideo{display:none;flex:1;overflow:hidden;min-height:0;}
+.vid-area{flex:1;position:relative;background:#000;display:flex;overflow:hidden;}
+.vid-layout{display:grid;grid-template-columns:1fr 260px;height:100%;width:100%;}
+.vid-main{position:relative;overflow:hidden;}
+video.vid-remote{width:100%;height:100%;object-fit:cover;}
+video.vid-local{position:absolute;bottom:14px;right:14px;width:160px;height:110px;object-fit:cover;border-radius:var(--rSm);border:2px solid rgba(255,255,255,.18);z-index:10;cursor:pointer;}
+.vid-remote-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0a0a12;color:var(--textD);font-size:.9rem;gap:.5rem;flex-direction:column;}
+.vid-status-pill{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);backdrop-filter:blur(8px);border-radius:var(--rPill);padding:.28rem .85rem;font-size:.75rem;display:flex;align-items:center;gap:.4rem;border:1px solid rgba(255,255,255,.08);}
+.vid-stranger-lbl{position:absolute;top:14px;left:14px;background:rgba(0,0,0,.6);border-radius:var(--rPill);padding:.2rem .65rem;font-size:.72rem;font-weight:700;color:#fff;}
+.vid-react-bar{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);backdrop-filter:blur(8px);border-radius:var(--rPill);padding:.35rem .55rem;display:flex;gap:.2rem;}
+.vid-react-bar span{font-size:1.3rem;cursor:pointer;transition:transform .15s;padding:.1rem .2rem;border-radius:4px;}
+.vid-react-bar span:hover{transform:scale(1.3);}
+.vid-controls-bar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.72);backdrop-filter:blur(8px);border-radius:var(--rPill);padding:.35rem .55rem;display:flex;gap:.32rem;align-items:center;}
+.vid-btn{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.88rem;transition:all .15s;}
+.vid-btn:hover{background:rgba(255,255,255,.22);}
+.vid-btn.red{background:rgba(255,82,82,.3);}
+.vid-btn.red:hover{background:rgba(255,82,82,.55);}
+.vid-btn.off{background:rgba(255,82,82,.2);color:var(--err);}
+.react-burst{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.react-float{position:absolute;bottom:20%;font-size:1.8rem;animation:floatUp 1.5s ease-out forwards;}
+/* Video chat strip */
+.vid-chat-strip{display:flex;flex-direction:column;background:var(--bg2);border-left:1px solid var(--border2);}
+.vid-msgs{flex:1;overflow-y:auto;padding:.7rem .6rem;}
+.vid-msg{margin-bottom:.5rem;font-size:.82rem;}
+.vid-msg-name{font-weight:700;font-size:.7rem;color:var(--accent);margin-bottom:.12rem;}
+.vid-msg.own .vid-msg-name{color:var(--accent3);}
+.vid-msg-text{background:var(--panel);border-radius:0 var(--rSm) var(--rSm) var(--rSm);padding:.38rem .62rem;word-break:break-word;display:inline-block;border:1px solid var(--border2);}
+.vid-msg.own{text-align:right;}
+.vid-msg.own .vid-msg-text{background:rgba(124,111,255,.15);border-radius:var(--rSm) 0 var(--rSm) var(--rSm);}
+.vid-inp-row{padding:.55rem;border-top:1px solid var(--border2);display:flex;gap:.35rem;flex-shrink:0;}
+.vid-inp{flex:1;background:var(--panel);border:1.5px solid var(--border2);border-radius:var(--rPill);padding:.4rem .75rem;color:var(--text);font-size:.8rem;outline:none;font-family:inherit;transition:border-color .15s;}
+.vid-inp:focus{border-color:var(--accent);}
+.vid-send-btn{width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.78rem;flex-shrink:0;}
+
+@keyframes spin2{to{transform:rotate(360deg)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 16px rgba(124,111,255,.35)}50%{box-shadow:0 0 34px rgba(124,111,255,.65)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+@keyframes msgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes tdBounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-5px);opacity:1}}
+@keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{transform:translateY(-150px) scale(1.2);opacity:0}}
+@media(max-width:640px){.vid-layout{grid-template-columns:1fr;}.vid-chat-strip{height:200px;border-left:none;border-top:1px solid var(--border2);}}
+@media(max-width:500px){.mode-row{flex-direction:column;align-items:center;}.mode-card{width:240px;}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="../views/dashboard.html" class="top-bar-logo">
+    <div class="ico"><i class="fas fa-bolt"></i></div>
+    <span class="txt">NexusChat</span>
+  </a>
+  <div class="sep"></div>
+  <span class="top-bar-title"><i class="fas fa-random"></i> Random Match</span>
+  <div class="top-bar-right">
+    <a href="../views/dashboard.html" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<div class="page-body">
+
+  <!-- IDLE -->
+  <div class="mscreen" id="rIdle">
+    <div style="font-size:3.5rem;animation:float 3.5s ease-in-out infinite;">🎲</div>
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-size:1.9rem;font-weight:800;">Random Match</h2>
+    <p style="color:var(--textM);max-width:320px;line-height:1.7;">Pick your vibe — anonymous text chat or live face-to-face video.</p>
+    <div class="mode-row">
+      <div class="mode-card chat-card" onclick="startMatch('chat')">
+        <div class="mode-ico" style="background:linear-gradient(135deg,rgba(124,111,255,.2),rgba(62,237,207,.15));">💬</div>
+        <div class="mode-lbl">Chat Match</div>
+        <div class="mode-sub">Text only · anonymous</div>
+        <button class="btn btn-primary btn-sm" style="margin-top:.9rem;width:100%;pointer-events:none;"><i class="fas fa-comments"></i> Start Chat</button>
+      </div>
+      <div class="mode-card vid-card" onclick="startMatch('video')">
+        <div class="mode-ico" style="background:linear-gradient(135deg,rgba(255,95,160,.2),rgba(255,140,0,.15));">🎥</div>
+        <div class="mode-lbl">Video Match</div>
+        <div class="mode-sub">Face to face · P2P</div>
+        <button class="btn btn-accent2 btn-sm" style="margin-top:.9rem;width:100%;pointer-events:none;"><i class="fas fa-video"></i> Start Video</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCHING -->
+  <div id="rSearching">
+    <div class="search-orb" id="rSearchOrb"><i class="fas fa-search"></i></div>
+    <div class="mtimer" id="mTimer">0:00</div>
+    <div class="mlbl" id="rSearchLbl">Searching for a stranger...</div>
+    <button class="btn btn-ghost btn-sm" onclick="cancelMatch()" style="margin-top:.5rem;"><i class="fas fa-times"></i> Cancel</button>
+  </div>
+
+  <!-- CHAT MATCH -->
+  <div id="rChatMatch">
+    <div class="rand-header">
+      <div class="rand-badge"><div class="dot"></div>Stranger connected</div>
+      <div class="rand-actions">
+        <button class="btn btn-secondary btn-sm" onclick="nextStranger()"><i class="fas fa-forward"></i> Next</button>
+        <button class="btn btn-ghost btn-sm" onclick="reportStranger()" style="color:var(--err);border-color:rgba(255,82,82,.3);"><i class="fas fa-flag"></i> Report</button>
+      </div>
+    </div>
+    <div class="msgs-area" id="randMsgs"></div>
+    <div class="tbar-rand" id="randTypingBar"></div>
+    <div class="inp-area">
+      <textarea class="chat-ta" id="randTa" placeholder="Say something..." maxlength="500" rows="1" oninput="onRandInput()" onkeydown="onRandKey(event)"></textarea>
+      <button class="snd-btn" onclick="sendRandMsg()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <!-- VIDEO MATCH -->
+  <div id="rVideo">
+    <div class="vid-layout">
+      <div class="vid-main">
+        <video id="remoteVideo" class="vid-remote" autoplay playsinline></video>
+        <div class="vid-remote-overlay" id="vidRemoteOverlay">
+          <i class="fas fa-video" style="font-size:2rem;"></i>
+          <span>Connecting video...</span>
+        </div>
+        <video id="localVideo" class="vid-local" autoplay playsinline muted></video>
+        <div id="reactBurst" class="react-burst"></div>
+        <div class="vid-stranger-lbl">👻 Stranger</div>
+        <div class="vid-status-pill" id="vidStatus">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--warn);display:inline-block;"></span>Connecting...
+        </div>
+        <div class="vid-react-bar">
+          <span onclick="sendReact('👋')">👋</span><span onclick="sendReact('❤️')">❤️</span>
+          <span onclick="sendReact('😂')">😂</span><span onclick="sendReact('🔥')">🔥</span>
+          <span onclick="sendReact('👏')">👏</span><span onclick="sendReact('😮')">😮</span>
+        </div>
+        <div class="vid-controls-bar">
+          <button class="vid-btn" id="btnMute" onclick="toggleMuteV()" title="Mute"><i class="fas fa-microphone"></i></button>
+          <button class="vid-btn" id="btnCam" onclick="toggleCamV()" title="Camera"><i class="fas fa-video"></i></button>
+          <button class="vid-btn red" onclick="endVideoCall()" title="End"><i class="fas fa-phone-slash"></i></button>
+          <button class="vid-btn" onclick="nextVideoStranger()" title="Next"><i class="fas fa-forward"></i></button>
+          <button class="vid-btn" id="btnBlur" onclick="toggleBlurV()" title="Blur bg"><i class="fas fa-circle-notch"></i></button>
+        </div>
+      </div>
+      <div class="vid-chat-strip">
+        <div class="vid-msgs" id="vidMsgs"></div>
+        <div class="vid-inp-row">
+          <input class="vid-inp" id="vidInp" type="text" placeholder="Say something..." maxlength="200" onkeydown="if(event.key==='Enter')sendVidMsg()"/>
+          <button class="vid-send-btn" onclick="sendVidMsg()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-box"></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getDatabase,ref,set,get,push,onValue,remove,update,onDisconnect,query,limitToLast}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const cfg={apiKey:"AIzaSyBeT226lzGP0ERDY7QZhKF8zfo0OwSGEZ4",authDomain:"fir-50409.firebaseapp.com",databaseURL:"https://fir-50409-default-rtdb.firebaseio.com",projectId:"fir-50409",storageBucket:"fir-50409.firebasestorage.app",messagingSenderId:"336958746825",appId:"1:336958746825:web:dc23031418217663b85d18"};
+const fbApp=initializeApp(cfg),auth=getAuth(fbApp),db=getDatabase(fbApp);
+const RTC_CFG={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]};
+
+let me=null,myP=null;
+let mTmr=null,mCnt=0,matchMode='chat';
+let randRoom=null,activeType=null;
+let unsubs=[],typTO=null,isTyping=false;
+let pc=null,localStream=null,vidRoomId=null,vidUnsubs=[];
+let isMuted=false,isCamOff=false,isBlurred=false,autoReconnect=true;
+let prefs=JSON.parse(localStorage.getItem('nc_prefs')||'{"sound":true}');
+
+onAuthStateChanged(auth,async u=>{
+  if(!u){location.href='../pages/login.html';return;}
+  me=u;
+  const s=await get(ref(db,`users/${me.uid}`));
+  if(!s.exists()){location.href='../pages/create-username.html';return;}
+  myP=s.val();
+  document.documentElement.setAttribute('data-theme',localStorage.getItem('nc_theme')||'dark');
+});
+
+function showOnly(id){['rIdle','rSearching','rChatMatch','rVideo'].forEach(v=>{const el=document.getElementById(v);if(el)el.style.display='none';});const el=document.getElementById(id);if(el)el.style.display=id==='rVideo'?'block':'flex';}
+
+// ── Match ──
+window.startMatch=async(mode='chat')=>{
+  matchMode=mode;autoReconnect=true;
+  showOnly('rSearching');
+  const orb=document.getElementById('rSearchOrb');
+  orb.style.background=mode==='video'?'linear-gradient(135deg,var(--accent2),#FF8C00)':'linear-gradient(135deg,var(--accent),var(--accent2))';
+  document.getElementById('rSearchLbl').textContent=mode==='video'?'Searching for a video stranger...':'Searching for a stranger...';
+  mCnt=0;clearInterval(mTmr);
+  mTmr=setInterval(()=>{mCnt++;const m=Math.floor(mCnt/60),s=mCnt%60;const el=document.getElementById('mTimer');if(el)el.textContent=`${m}:${s.toString().padStart(2,'0')}`;},1000);
+  const queue=mode==='video'?'videoQueue':'matchQueue';
+  await set(ref(db,`${queue}/${me.uid}`),{uid:me.uid,username:myP.username,ts:Date.now(),mode});
+  onDisconnect(ref(db,`${queue}/${me.uid}`)).remove();
+  const qu=onValue(ref(db,queue),async snap=>{
+    if(!snap.exists())return;
+    const others=Object.entries(snap.val()).filter(([uid])=>uid!==me.uid);
+    if(!others.length)return;
+    others.sort((a,b)=>a[1].ts-b[1].ts);
+    const[sUid]=others[0];
+    if(me.uid<sUid){
+      const rRef=push(ref(db,'rooms'));const rid=rRef.key;
+      await set(rRef,{name:mode==='video'?'Video Chat':'Random Chat',type:'random',mode,owner:me.uid,members:{[me.uid]:true,[sUid]:true},createdAt:Date.now(),active:true});
+      await set(ref(db,`randomMatch/${me.uid}`),{roomId:rid,mode});
+      await set(ref(db,`randomMatch/${sUid}`),{roomId:rid,mode});
+    }
+  });
+  unsubs.push(qu);
+  const mu=onValue(ref(db,`randomMatch/${me.uid}`),async snap=>{
+    if(!snap.exists())return;
+    const{roomId,mode:m}=snap.val();
+    clearInterval(mTmr);qu();mu();
+    await remove(ref(db,`${queue}/${me.uid}`));await remove(ref(db,`randomMatch/${me.uid}`));
+    randRoom=roomId;
+    if(m==='video')enterVideoRoom(roomId);else enterRandRoom(roomId);
+  });
+  unsubs.push(mu);
+};
+
+window.cancelMatch=async()=>{
+  clearInterval(mTmr);
+  const queue=matchMode==='video'?'videoQueue':'matchQueue';
+  await remove(ref(db,`${queue}/${me.uid}`));await remove(ref(db,`randomMatch/${me.uid}`));
+  cleanListeners();showOnly('rIdle');
+};
+
+// ── Chat match ──
+async function enterRandRoom(rid){
+  showOnly('rChatMatch');
+  activeType='random';
+  subMessages(rid);subTyping(rid);
+  await push(ref(db,`messages/${rid}`),{uid:'system',text:'🎲 Stranger connected! Say hello 👋',timestamp:Date.now(),edited:false,deleted:false});
+}
+
+function subMessages(rid){
+  const q=query(ref(db,`messages/${rid}`),limitToLast(100));
+  const u=onValue(q,snap=>{
+    const wrap=document.getElementById('randMsgs');
+    if(!snap.exists()){wrap.innerHTML='';return;}
+    const data=snap.val();
+    wrap.innerHTML=Object.values(data).sort((a,b)=>a.timestamp-b.timestamp).map(m=>{
+      if(m.uid==='system')return`<div class="smsg-r"><i class="fas fa-info-circle"></i>${esc(m.text||'')}</div>`;
+      const own=m.uid===me.uid;
+      const ava=own?(myP.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(myP.username)}&background=7C6FFF&color=fff&size=80`):`https://ui-avatars.com/api/?name=S&background=FF5FA0&color=fff&bold=true&size=80`;
+      const time=m.timestamp?new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+      return`<div class="mg${own?' own':''}">
+        <div class="mava-sm"><img src="${ava}" alt=""/></div>
+        <div class="mbody-sm">
+          <div class="mmeta-sm"><span>${own?'You':'Stranger'}</span><span style="font-size:.67rem;">${time}</span></div>
+          <div class="bbl-rand">${esc(m.text||'')}</div>
+        </div>
+      </div>`;
+    }).join('');
+    wrap.scrollTop=wrap.scrollHeight;
+  });
+  unsubs.push(u);
+}
+
+function subTyping(rid){
+  const u=onValue(ref(db,`typing/${rid}`),snap=>{
+    const bar=document.getElementById('randTypingBar');if(!bar)return;
+    if(!snap.exists()){bar.innerHTML='';return;}
+    const typers=Object.values(snap.val()).filter(t=>t.username!==myP.username&&Date.now()-t.ts<4000);
+    if(!typers.length){bar.innerHTML='';return;}
+    bar.innerHTML=`<span class="td"></span><span class="td"></span><span class="td"></span>&nbsp;Stranger typing...`;
+  });
+  unsubs.push(u);
+}
+
+window.sendRandMsg=async()=>{
+  const ta=document.getElementById('randTa');const text=ta.value.trim();
+  if(!text||!randRoom)return;
+  ta.value='';ta.style.height='auto';clearTy();
+  await push(ref(db,`messages/${randRoom}`),{uid:me.uid,username:myP.username,avatar:myP.avatar||'',text,timestamp:Date.now(),edited:false,deleted:false});
+};
+window.onRandInput=()=>{const ta=document.getElementById('randTa');ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,120)+'px';sendTy();};
+window.onRandKey=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendRandMsg();}};
+
+function sendTy(){if(!randRoom)return;if(!isTyping){isTyping=true;set(ref(db,`typing/${randRoom}/${me.uid}`),{username:myP.username,ts:Date.now()});}clearTimeout(typTO);typTO=setTimeout(clearTy,2000);}
+function clearTy(){if(!randRoom)return;isTyping=false;remove(ref(db,`typing/${randRoom}/${me.uid}`));}
+
+window.nextStranger=async()=>{
+  if(randRoom){await update(ref(db,`rooms/${randRoom}`),{active:false});await remove(ref(db,`rooms/${randRoom}`));}
+  document.getElementById('randTa')?.value;cleanListeners();randRoom=null;
+  showOnly('rIdle');setTimeout(()=>startMatch('chat'),300);
+};
+
+window.reportStranger=()=>{const r=prompt('Reason for reporting?');if(r)toast('Reported. Thank you.','ok');};
+
+// ── Video match ──
+async function enterVideoRoom(rid){
+  vidRoomId=rid;
+  showOnly('rVideo');
+  setVidStatus('warn','Connecting...');
+  document.getElementById('vidRemoteOverlay').style.display='flex';
+  try{
+    localStream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480},audio:true});
+    document.getElementById('localVideo').srcObject=localStream;
+  }catch{
+    toast('Camera/mic denied. Audio only.','warn');
+    try{localStream=await navigator.mediaDevices.getUserMedia({audio:true});}catch{localStream=null;}
+  }
+  pc=new RTCPeerConnection(RTC_CFG);
+  if(localStream)localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  const remoteStream=new MediaStream();
+  document.getElementById('remoteVideo').srcObject=remoteStream;
+  pc.ontrack=e=>{e.streams[0].getTracks().forEach(t=>remoteStream.addTrack(t));document.getElementById('vidRemoteOverlay').style.display='none';setVidStatus('ok','Connected');};
+  pc.onicecandidate=async e=>{if(e.candidate)await push(ref(db,`signaling/${rid}/candidates/${me.uid}`),e.candidate.toJSON());};
+  pc.onconnectionstatechange=()=>{
+    const state=pc?.connectionState;
+    if(state==='disconnected'||state==='failed'||state==='closed'){
+      setVidStatus('err','Disconnected');
+      if(autoReconnect){toast('Stranger left. Finding a new one...','info');setTimeout(async()=>{await cleanupVideoCall();showOnly('rIdle');if(autoReconnect)setTimeout(()=>startMatch('video'),400);},1500);}
+    }
+  };
+  const rw=onValue(ref(db,`rooms/${rid}/active`),snap=>{
+    if(snap.exists()&&snap.val()===false){if(!pc||pc.connectionState==='closed')return;toast('Stranger disconnected. Finding new...','info');setTimeout(async()=>{await cleanupVideoCall();showOnly('rIdle');if(autoReconnect)setTimeout(()=>startMatch('video'),400);},1200);}
+  });
+  vidUnsubs.push(rw);
+  const s=await get(ref(db,`rooms/${rid}`));const room=s.val();
+  const isOfferer=room.owner===me.uid;
+  const otherUid=isOfferer?Object.keys(room.members).find(u=>u!==me.uid):room.owner;
+  if(isOfferer){
+    const offer=await pc.createOffer();await pc.setLocalDescription(offer);
+    await set(ref(db,`signaling/${rid}/offer`),{type:offer.type,sdp:offer.sdp,from:me.uid});
+    const u=onValue(ref(db,`signaling/${rid}/answer`),async snap=>{if(!snap.exists())return;if(pc.signalingState==='have-local-offer')await pc.setRemoteDescription(new RTCSessionDescription(snap.val()));});
+    vidUnsubs.push(u);
+  }else{
+    const u=onValue(ref(db,`signaling/${rid}/offer`),async snap=>{if(!snap.exists()||pc.signalingState!=='stable')return;await pc.setRemoteDescription(new RTCSessionDescription(snap.val()));const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await set(ref(db,`signaling/${rid}/answer`),{type:answer.type,sdp:answer.sdp,from:me.uid});});
+    vidUnsubs.push(u);
+  }
+  if(otherUid){
+    const cu=onValue(ref(db,`signaling/${rid}/candidates/${otherUid}`),snap=>{if(!snap.exists())return;Object.values(snap.val()).forEach(async c=>{try{await pc.addIceCandidate(new RTCIceCandidate(c));}catch{}});});
+    vidUnsubs.push(cu);
+  }
+  const mu=onValue(ref(db,`messages/${rid}`),snap=>{
+    if(!snap.exists())return;
+    const msgs=Object.values(snap.val()).sort((a,b)=>a.timestamp-b.timestamp);
+    const vm=document.getElementById('vidMsgs');vm.innerHTML='';
+    msgs.forEach(m=>{if(m.uid==='system')return;const d=document.createElement('div');d.className='vid-msg'+(m.uid===me.uid?' own':'');d.innerHTML=`<div class="vid-msg-name">${m.uid===me.uid?'You':'Stranger'}</div><div class="vid-msg-text">${esc(m.text)}</div>`;vm.appendChild(d);});
+    vm.scrollTop=vm.scrollHeight;
+  });
+  vidUnsubs.push(mu);
+  watchRemoteReacts(rid);
+  await push(ref(db,`messages/${rid}`),{uid:'system',text:'🎥 Video connected!',timestamp:Date.now()});
+}
+
+function setVidStatus(type,text){const el=document.getElementById('vidStatus');if(!el)return;const c={warn:'var(--warn)',ok:'var(--ok)',err:'var(--err)'};el.innerHTML=`<span style="width:8px;height:8px;border-radius:50%;background:${c[type]};display:inline-block;"></span>${text}`;}
+window.toggleMuteV=()=>{if(!localStream)return;const t=localStream.getAudioTracks()[0];if(!t)return;isMuted=!isMuted;t.enabled=!isMuted;document.getElementById('btnMute').innerHTML=`<i class="fas fa-microphone${isMuted?'-slash':''}"></i>`;document.getElementById('btnMute').classList.toggle('off',isMuted);};
+window.toggleCamV=()=>{if(!localStream)return;const t=localStream.getVideoTracks()[0];if(!t)return;isCamOff=!isCamOff;t.enabled=!isCamOff;document.getElementById('btnCam').innerHTML=`<i class="fas fa-video${isCamOff?'-slash':''}"></i>`;document.getElementById('btnCam').classList.toggle('off',isCamOff);};
+window.toggleBlurV=()=>{isBlurred=!isBlurred;document.getElementById('localVideo').style.filter=isBlurred?'blur(8px)':'none';document.getElementById('btnBlur').classList.toggle('on',isBlurred);};
+window.endVideoCall=async()=>{autoReconnect=false;await cleanupVideoCall();showOnly('rIdle');};
+window.nextVideoStranger=async()=>{autoReconnect=true;await cleanupVideoCall();showOnly('rIdle');setTimeout(()=>startMatch('video'),300);};
+window.sendVidMsg=async()=>{const inp=document.getElementById('vidInp');const text=inp.value.trim();if(!text||!vidRoomId)return;inp.value='';await push(ref(db,`messages/${vidRoomId}`),{uid:me.uid,username:myP.username,text,timestamp:Date.now()});};
+window.sendReact=emoji=>{burstReact(emoji);if(vidRoomId)push(ref(db,`signaling/${vidRoomId}/reactions`),{emoji,from:me.uid,ts:Date.now()});};
+function burstReact(emoji){const burst=document.getElementById('reactBurst');if(!burst)return;for(let i=0;i<5;i++){const el=document.createElement('div');el.className='react-float';el.textContent=emoji;el.style.left=(20+Math.random()*60)+'%';el.style.animationDuration=(0.8+Math.random()*0.7)+'s';el.style.fontSize=(1.5+Math.random())+'rem';burst.appendChild(el);setTimeout(()=>el.remove(),1800);}}
+function watchRemoteReacts(rid){const u=onValue(ref(db,`signaling/${rid}/reactions`),snap=>{if(!snap.exists())return;const items=Object.values(snap.val()).filter(r=>r.from!==me.uid&&Date.now()-r.ts<3000);if(items.length)burstReact(items[items.length-1].emoji);});vidUnsubs.push(u);}
+async function cleanupVideoCall(){if(pc){pc.close();pc=null;}if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}if(vidRoomId){await remove(ref(db,`signaling/${vidRoomId}`));await update(ref(db,`rooms/${vidRoomId}`),{active:false});await remove(ref(db,`rooms/${vidRoomId}`));vidRoomId=null;}vidUnsubs.forEach(fn=>{try{fn();}catch{}});vidUnsubs=[];const rv=document.getElementById('remoteVideo');const lv=document.getElementById('localVideo');if(rv)rv.srcObject=null;if(lv)lv.srcObject=null;document.getElementById('vidRemoteOverlay').style.display='flex';isMuted=false;isCamOff=false;isBlurred=false;randRoom=null;}
+function cleanListeners(){unsubs.forEach(fn=>{try{fn();}catch{}});unsubs=[];clearTimeout(typTO);}
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,type='info'){const icons={ok:'fa-check-circle',err:'fa-exclamation-circle',info:'fa-info-circle',warn:'fa-exclamation-triangle'};const box=document.getElementById('toast-box');if(!box)return;const t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`<i class="fas ${icons[type]||'fa-info-circle'}"></i>${msg}`;box.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),260);},3400);}
+</script>
+</body>
+</html>

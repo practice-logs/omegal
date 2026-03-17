@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Sign In – NexusChat</title>
+<link rel="stylesheet" href="../css/style.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="auth-page">
+<div class="bg-blobs"><div class="blob b1"></div><div class="blob b2"></div></div>
+<div class="auth-box">
+  <div style="position:absolute;top:1.1rem;right:1.1rem;display:flex;gap:.4rem;align-items:center;">
+    <button class="theme-btn" id="thbtn" onclick="toggleTheme()"><i class="fas fa-moon" id="thico"></i></button>
+  </div>
+  <div class="auth-logo">
+    <div class="auth-logo-ico" style="animation:glowPulse 3s ease-in-out infinite;"><i class="fas fa-bolt"></i></div>
+    <div class="auth-logo-name">NexusChat</div>
+    <div class="auth-logo-sub">Your world of real conversations</div>
+  </div>
+  <p class="auth-sub">Sign in to continue to your chats</p>
+  <div class="alert alert-err" id="err"><i class="fas fa-exclamation-circle"></i><span id="errtxt"></span></div>
+  <div class="alert alert-ok" id="ok"><i class="fas fa-check-circle"></i><span id="oktxt"></span></div>
+  <div class="inp-group">
+    <label><i class="fas fa-envelope"></i> Email Address</label>
+    <div class="inp-wrap">
+      <i class="fas fa-envelope ico"></i>
+      <input class="inp" type="email" id="email" placeholder="you@example.com" autocomplete="email"/>
+    </div>
+  </div>
+  <div class="inp-group">
+    <label><i class="fas fa-lock"></i> Password</label>
+    <div class="inp-wrap">
+      <i class="fas fa-lock ico"></i>
+      <input class="inp" type="password" id="pw" placeholder="••••••••" autocomplete="current-password"/>
+      <button class="eye-btn" type="button" id="eye" onclick="toggleEye()"><i class="fas fa-eye"></i></button>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem;font-size:.83rem;">
+    <label style="display:flex;align-items:center;gap:.42rem;cursor:pointer;color:var(--textM);">
+      <input type="checkbox" id="rem" style="accent-color:var(--accent);width:14px;height:14px;"/> Remember me
+    </label>
+    <button onclick="forgotPw()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:.83rem;font-weight:700;padding:0;">Forgot password?</button>
+  </div>
+  <button class="btn btn-primary w-full" id="loginbtn" onclick="doLogin()">
+    <i class="fas fa-sign-in-alt"></i> Sign In
+  </button>
+  <p class="auth-foot">Don't have an account? <a href="register.html">Create one — it's free</a></p>
+</div>
+<div id="toast-box"></div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,signInWithEmailAndPassword,sendPasswordResetEmail,onAuthStateChanged,setPersistence,browserLocalPersistence,browserSessionPersistence}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getDatabase,ref,get}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const cfg={apiKey:"AIzaSyBeT226lzGP0ERDY7QZhKF8zfo0OwSGEZ4",authDomain:"fir-50409.firebaseapp.com",databaseURL:"https://fir-50409-default-rtdb.firebaseio.com",projectId:"fir-50409",storageBucket:"fir-50409.firebasestorage.app",messagingSenderId:"336958746825",appId:"1:336958746825:web:dc23031418217663b85d18"};
+const app=initializeApp(cfg),auth=getAuth(app),db=getDatabase(app);
+// Theme
+const st=localStorage.getItem('nc_theme')||'dark';
+document.documentElement.setAttribute('data-theme',st);
+document.getElementById('thico').className=st==='dark'?'fas fa-moon':'fas fa-sun';
+window.toggleTheme=()=>{const c=document.documentElement.getAttribute('data-theme'),n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('nc_theme',n);document.getElementById('thico').className=n==='dark'?'fas fa-moon':'fas fa-sun';};
+onAuthStateChanged(auth,async u=>{if(u){const s=await get(ref(db,`users/${u.uid}/username`));location.href=s.exists()?'../views/dashboard.html':'create-username.html';}});
+window.toggleEye=()=>{const p=document.getElementById('pw'),i=document.querySelector('#eye i');if(p.type==='password'){p.type='text';i.className='fas fa-eye-slash';}else{p.type='password';i.className='fas fa-eye';}};
+window.doLogin=async()=>{
+  const em=document.getElementById('email').value.trim(),pw=document.getElementById('pw').value,rem=document.getElementById('rem').checked;
+  const btn=document.getElementById('loginbtn');
+  hide('err');hide('ok');
+  if(!em||!pw){show('err','Please fill in all fields.');return;}
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Signing in...';
+  try{
+    await setPersistence(auth,rem?browserLocalPersistence:browserSessionPersistence);
+    await signInWithEmailAndPassword(auth,em,pw);
+  }catch(e){
+    btn.disabled=false;btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Sign In';
+    const m={'auth/user-not-found':'No account found with this email.','auth/wrong-password':'Incorrect password. Try again.','auth/invalid-email':'Invalid email address.','auth/too-many-requests':'Too many attempts. Please try later.','auth/invalid-credential':'Invalid email or password.'};
+    show('err',m[e.code]||'Login failed. Please try again.');
+  }
+};
+window.forgotPw=async()=>{
+  const em=document.getElementById('email').value.trim();
+  if(!em){show('err','Enter your email address first.');return;}
+  try{await sendPasswordResetEmail(auth,em);show('ok','Password reset email sent! Check your inbox.');}
+  catch{show('err','Could not send reset email.');}
+};
+document.addEventListener('keydown',e=>{if(e.key==='Enter')window.doLogin();});
+function show(id,msg){const el=document.getElementById(id);document.getElementById(id+'txt').textContent=msg;el.classList.add('show');}
+function hide(id){document.getElementById(id).classList.remove('show');}
+</script>
+</body>
+</html>

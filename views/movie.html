@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>NexusChat — Movie Room</title>
+<link rel="stylesheet" href="../css/themes.css"/>
+<link rel="stylesheet" href="../css/base.css"/>
+<link rel="stylesheet" href="../css/components.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;}
+a{text-decoration:none;color:inherit;}
+
+/* ── Page shell ── */
+.page{display:flex;flex-direction:column;min-height:100vh;}
+.top-bar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 1.2rem;gap:.8rem;flex-shrink:0;z-index:100;}
+.top-bar-logo{display:flex;align-items:center;gap:.45rem;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;}
+.top-bar-logo .ico{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#fff;}
+.top-bar-logo .txt{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.top-bar-sep{width:1px;height:24px;background:var(--border2);}
+.top-bar-title{font-size:.9rem;font-weight:700;color:var(--text);}
+.top-bar-code{background:rgba(124,111,255,.15);border:1px solid rgba(124,111,255,.3);border-radius:var(--rPill);padding:.2rem .7rem;font-size:.75rem;font-weight:800;letter-spacing:.1em;color:var(--accent);font-family:'Space Grotesk',sans-serif;cursor:pointer;transition:all .15s;display:none;}
+.top-bar-code:hover{background:rgba(124,111,255,.25);}
+.top-bar-right{margin-left:auto;display:flex;align-items:center;gap:.5rem;}
+
+/* ── Landing ── */
+#landing{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;}
+.landing-icon{font-size:4rem;margin-bottom:1.2rem;animation:float 3s ease-in-out infinite;}
+.landing-title{font-family:'Space Grotesk',sans-serif;font-size:2.2rem;font-weight:800;margin-bottom:.6rem;background:linear-gradient(135deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.landing-sub{color:var(--textM);font-size:.95rem;max-width:440px;line-height:1.7;margin-bottom:.5rem;}
+.landing-badge{display:inline-flex;align-items:center;gap:.4rem;background:rgba(62,237,207,.1);border:1px solid rgba(62,237,207,.25);border-radius:var(--rPill);padding:.28rem .85rem;font-size:.75rem;font-weight:700;color:var(--accent3);margin-bottom:2rem;}
+.landing-cards{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center;}
+.lcard{background:var(--panel);border:1.5px solid var(--border2);border-radius:var(--r);padding:2rem 1.8rem;width:220px;cursor:pointer;transition:all .22s;text-align:center;}
+.lcard:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 12px 40px var(--glow);}
+.lcard-ico{font-size:2.5rem;margin-bottom:1rem;}
+.lcard-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:.4rem;}
+.lcard-sub{font-size:.8rem;color:var(--textM);line-height:1.5;}
+.lcard.host{border-color:rgba(124,111,255,.3);}
+.lcard.host:hover{border-color:var(--accent);}
+.lcard.join{border-color:rgba(62,237,207,.2);}
+.lcard.join:hover{border-color:var(--accent3);}
+
+/* ── Create/Join forms ── */
+#createRoom,#joinRoom{flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;}
+.form-card{background:var(--panel);border:1px solid var(--border2);border-radius:var(--r);padding:2rem;width:100%;max-width:400px;box-shadow:var(--sh);}
+.form-back{background:none;border:none;color:var(--textM);cursor:pointer;font-size:.85rem;display:flex;align-items:center;gap:.4rem;margin-bottom:1.4rem;padding:0;font-family:inherit;}
+.form-back:hover{color:var(--text);}
+.form-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.1rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem;}
+
+/* ── Main room layout ── */
+#roomView{flex:1;display:none;overflow:hidden;}
+.room-wrap{display:grid;grid-template-columns:1fr 300px;height:100%;overflow:hidden;}
+.room-main{display:flex;flex-direction:column;overflow:hidden;background:#000;}
+.room-side{display:flex;flex-direction:column;background:var(--bg2);border-left:1px solid var(--border2);overflow:hidden;}
+
+/* ── Video area ── */
+.video-area{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:#000;min-height:0;}
+video.movie-vid{width:100%;height:100%;object-fit:contain;display:none;}
+#viewerVideo{width:100%;height:100%;object-fit:contain;display:none;}
+
+/* Drop zone */
+.drop-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.9rem;padding:2rem;text-align:center;border:2px dashed rgba(124,111,255,.3);border-radius:var(--r);margin:1.5rem;cursor:pointer;transition:all .22s;position:absolute;inset:1.5rem;}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(124,111,255,.05);}
+.drop-zone-ico{font-size:3.5rem;opacity:.8;}
+.drop-zone-title{font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;}
+.drop-zone-sub{color:var(--textM);font-size:.85rem;line-height:1.6;}
+.drop-zone-note{display:flex;align-items:center;gap:.4rem;background:rgba(62,237,207,.1);border:1px solid rgba(62,237,207,.2);border-radius:var(--rPill);padding:.25rem .7rem;font-size:.72rem;color:var(--accent3);font-weight:700;}
+
+/* Waiting screen for viewer */
+.viewer-waiting{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:2rem;text-align:center;position:absolute;inset:0;}
+.viewer-waiting .orbit{width:80px;height:80px;border-radius:50%;border:3px solid rgba(124,111,255,.2);border-top-color:var(--accent);animation:spin .9s linear infinite;margin-bottom:.5rem;}
+.viewer-waiting h3{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.1rem;}
+.viewer-waiting p{color:var(--textM);font-size:.85rem;}
+
+/* Controls bar */
+.vid-controls{height:56px;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:0 1rem;gap:.8rem;flex-shrink:0;}
+.vc-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:all .15s;}
+.vc-btn:hover{background:rgba(255,255,255,.2);}
+.vc-btn.accent{background:var(--accent);box-shadow:0 0 14px var(--glow);}
+.vol-wrap{display:flex;align-items:center;gap:.4rem;color:var(--textM);font-size:.8rem;}
+.vol-slider{width:80px;accent-color:var(--accent);}
+.time-display{font-size:.78rem;color:var(--textM);font-variant-numeric:tabular-nums;font-family:'Space Grotesk',sans-serif;white-space:nowrap;}
+.stream-badge{display:flex;align-items:center;gap:.38rem;background:rgba(255,82,82,.15);border:1px solid rgba(255,82,82,.3);border-radius:var(--rPill);padding:.2rem .65rem;font-size:.72rem;font-weight:700;color:var(--err);}
+.stream-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--err);animation:pulse 1.2s ease infinite;}
+.seek-wrap{flex:1;display:flex;align-items:center;gap:.5rem;}
+.seek-bar{flex:1;accent-color:var(--accent);cursor:pointer;}
+.vc-spacer{flex:1;}
+.fullscreen-btn{margin-left:auto;}
+
+/* ── Side panel ── */
+.side-tabs{display:flex;border-bottom:1px solid var(--border2);flex-shrink:0;}
+.side-tab{flex:1;padding:.7rem .5rem;text-align:center;font-size:.78rem;font-weight:700;color:var(--textM);cursor:pointer;transition:all .15s;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;}
+.side-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* Members panel */
+.members-panel{flex:1;overflow-y:auto;padding:.7rem .6rem;display:none;}
+.members-panel.show{display:block;}
+.member-row{display:flex;align-items:center;gap:.55rem;padding:.48rem .55rem;border-radius:var(--rSm);margin-bottom:.2rem;}
+.member-ava{width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;}
+.member-ava img{width:100%;height:100%;object-fit:cover;display:block;}
+.member-name{font-size:.83rem;font-weight:600;flex:1;}
+.member-role{font-size:.66rem;padding:.1rem .38rem;border-radius:3px;font-weight:700;}
+.role-host{background:rgba(255,184,77,.15);color:var(--warn);}
+.role-viewer{background:rgba(62,237,207,.1);color:var(--accent3);}
+.member-status{width:8px;height:8px;border-radius:50%;background:var(--ok);flex-shrink:0;}
+
+/* Chat panel */
+.chat-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;display:none;}
+.chat-panel.show{display:flex;}
+.chat-msgs{flex:1;overflow-y:auto;padding:.7rem .6rem;}
+.chat-msg{margin-bottom:.55rem;animation:msgIn .2s ease;}
+.chat-msg-name{font-size:.72rem;font-weight:700;color:var(--accent);margin-bottom:.18rem;}
+.chat-msg-name.own{color:var(--accent3);}
+.chat-bbl{background:var(--panel);border-radius:0 var(--rSm) var(--rSm) var(--rSm);padding:.45rem .7rem;font-size:.83rem;line-height:1.5;word-break:break-word;display:inline-block;max-width:100%;border:1px solid var(--border2);}
+.chat-msg.own{text-align:right;}
+.chat-msg.own .chat-bbl{background:linear-gradient(135deg,rgba(124,111,255,.2),rgba(168,85,247,.15));border-radius:var(--rSm) 0 var(--rSm) var(--rSm);}
+.chat-msg.own .chat-msg-name{color:var(--accent3);}
+.chat-empty{text-align:center;color:var(--textD);font-size:.8rem;padding:1.5rem .5rem;}
+.chat-input-wrap{padding:.55rem .6rem;border-top:1px solid var(--border2);flex-shrink:0;display:flex;gap:.4rem;align-items:center;}
+.chat-inp{flex:1;background:var(--panel);border:1.5px solid var(--border2);border-radius:var(--rPill);padding:.42rem .85rem;color:var(--text);font-size:.83rem;outline:none;font-family:inherit;transition:border-color .15s;}
+.chat-inp:focus{border-color:var(--accent);}
+.chat-send{width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;transition:all .15s;}
+.chat-send:hover{background:var(--accentH);}
+
+/* File loaded preview */
+.file-loaded{display:none;flex-direction:column;align-items:center;gap:.6rem;padding:1.5rem;text-align:center;position:absolute;inset:0;justify-content:center;}
+.file-loaded-icon{font-size:3rem;}
+.file-loaded-name{font-weight:700;font-size:1rem;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-loaded-size{font-size:.8rem;color:var(--textM);}
+.file-loaded-actions{display:flex;gap:.5rem;margin-top:.3rem;}
+
+/* Invite modal */
+.invite-box{background:rgba(124,111,255,.08);border:1px solid rgba(124,111,255,.2);border-radius:var(--rSm);padding:.9rem;margin-bottom:1rem;}
+.invite-code{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:900;letter-spacing:.18em;color:var(--accent);text-align:center;padding:.5rem 0;}
+.copy-row{display:flex;gap:.4rem;align-items:center;}
+.copy-inp{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--rSm);padding:.5rem .8rem;color:var(--textM);font-size:.76rem;outline:none;font-family:inherit;}
+
+/* Responsive */
+@media(max-width:700px){
+  .room-wrap{grid-template-columns:1fr;}
+  .room-side{height:280px;border-left:none;border-top:1px solid var(--border2);}
+  .landing-cards{flex-direction:column;align-items:center;}
+  .landing-title{font-size:1.6rem;}
+}
+
+/* Misc */
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes msgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+<div class="page" id="pageRoot">
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <a href="../views/dashboard.html" class="top-bar-logo">
+    <div class="ico"><i class="fas fa-bolt"></i></div>
+    <span class="txt">NexusChat</span>
+  </a>
+  <div class="top-bar-sep"></div>
+  <span class="top-bar-title" id="topBarTitle"><i class="fas fa-film"></i> Movie Room</span>
+  <div id="topBarCode" class="top-bar-code" onclick="openInviteModal()" title="Click to share"></div>
+  <div class="top-bar-right" id="topBarRight">
+    <a href="../views/dashboard.html" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Back to Chat</a>
+  </div>
+</div>
+
+<!-- LANDING -->
+<div id="landing">
+  <div class="landing-icon">🎬</div>
+  <div class="landing-title">Movie Night, Together</div>
+  <div class="landing-sub">Stream any local video file directly to your friends — no uploads, no servers, just pure P2P magic.</div>
+  <div class="landing-badge"><i class="fas fa-shield-alt"></i> Your file never leaves your device · Up to 5 members</div>
+  <div class="landing-cards">
+    <div class="lcard host" onclick="showCreate()">
+      <div class="lcard-ico">🎥</div>
+      <div class="lcard-title">Host a Movie</div>
+      <div class="lcard-sub">Create a room, upload your video locally, and stream to friends instantly</div>
+    </div>
+    <div class="lcard join" onclick="showJoin()">
+      <div class="lcard-ico">🔗</div>
+      <div class="lcard-title">Join a Room</div>
+      <div class="lcard-sub">Enter a 6-digit code from the host to join the watch party</div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE ROOM -->
+<div id="createRoom">
+  <div class="form-card">
+    <button class="form-back" onclick="showLanding()"><i class="fas fa-arrow-left"></i> Back</button>
+    <div class="form-title"><i class="fas fa-film" style="color:var(--accent);"></i> Create Movie Room</div>
+    <div class="inp-group">
+      <label><i class="fas fa-tag"></i> Room Name</label>
+      <input class="inp" type="text" id="movieNameInp" placeholder="e.g. Friday Movie Night" maxlength="40"/>
+    </div>
+    <div style="background:rgba(62,237,207,.08);border:1px solid rgba(62,237,207,.2);border-radius:var(--rSm);padding:.7rem .9rem;font-size:.8rem;color:var(--textM);margin-bottom:1.2rem;display:flex;gap:.42rem;align-items:flex-start;">
+      <i class="fas fa-lock" style="color:var(--accent3);flex-shrink:0;margin-top:.05rem;"></i>
+      <span>Your movie file stays 100% local on your device. It streams directly to friends via encrypted P2P — no upload, no storage.</span>
+    </div>
+    <button class="btn btn-primary w-full" onclick="createMovieRoom()"><i class="fas fa-rocket"></i> Create Room</button>
+  </div>
+</div>
+
+<!-- JOIN ROOM -->
+<div id="joinRoom">
+  <div class="form-card">
+    <button class="form-back" onclick="showLanding()"><i class="fas fa-arrow-left"></i> Back</button>
+    <div class="form-title"><i class="fas fa-link" style="color:var(--accent3);"></i> Join Movie Room</div>
+    <div class="inp-group">
+      <label><i class="fas fa-key"></i> 6-Digit Code</label>
+      <input class="inp" type="text" id="joinCodeInp" placeholder="Enter code from host" maxlength="10" autocomplete="off" style="font-size:1.3rem;font-family:'Space Grotesk',sans-serif;letter-spacing:.12em;font-weight:800;text-align:center;"/>
+    </div>
+    <button class="btn btn-primary w-full" onclick="joinMovieRoom()"><i class="fas fa-sign-in-alt"></i> Join Room</button>
+  </div>
+</div>
+
+<!-- ROOM VIEW -->
+<div id="roomView">
+  <div class="room-wrap">
+    <!-- Main video column -->
+    <div class="room-main">
+      <div class="video-area" id="videoArea">
+        <!-- Host: drop zone -->
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('movieFileInp').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <div class="drop-zone-ico">🎬</div>
+          <div class="drop-zone-title">Drop your movie here</div>
+          <div class="drop-zone-sub">Or click to browse — MP4, MKV, AVI, MOV, any format<br/>Works with files of any size — 1GB, 2GB, 4GB+</div>
+          <div class="drop-zone-note"><i class="fas fa-shield-alt"></i> File stays local · Zero upload</div>
+        </div>
+        <!-- Host: file loaded (before streaming) -->
+        <div class="file-loaded" id="fileLoaded">
+          <div class="file-loaded-icon">🎞️</div>
+          <div class="file-loaded-name" id="fileLoadedName"></div>
+          <div class="file-loaded-size" id="fileLoadedSize"></div>
+          <div class="file-loaded-actions">
+            <button class="btn btn-ghost btn-sm" onclick="resetFile()"><i class="fas fa-times"></i> Change</button>
+            <button class="btn btn-primary btn-sm" id="streamBtn" onclick="startStreaming()"><i class="fas fa-broadcast-tower"></i> Start Streaming</button>
+          </div>
+        </div>
+        <!-- Host: actual video (playing + streaming) -->
+        <video id="hostVideo" class="movie-vid" controls preload="metadata"></video>
+        <!-- Viewer: received stream -->
+        <video id="viewerVideo" class="movie-vid" autoplay playsinline></video>
+        <!-- Viewer waiting -->
+        <div class="viewer-waiting hidden" id="viewerWaiting">
+          <div class="orbit"></div>
+          <h3>Waiting for host to start...</h3>
+          <p>The host is setting up the movie. Hang tight!</p>
+        </div>
+      </div>
+      <!-- Video controls bar -->
+      <div class="vid-controls" id="vidControls">
+        <!-- Host controls -->
+        <div id="hostControls" style="display:flex;align-items:center;gap:.7rem;width:100%;">
+          <button class="vc-btn" id="playPauseBtn" onclick="togglePlay()" title="Play/Pause"><i class="fas fa-play"></i></button>
+          <div class="seek-wrap">
+            <span class="time-display" id="currentTime">0:00</span>
+            <input type="range" class="seek-bar" id="seekBar" value="0" min="0" step="0.1" oninput="onSeek(this.value)" style="flex:1;"/>
+            <span class="time-display" id="totalTime">0:00</span>
+          </div>
+          <div class="vol-wrap">
+            <i class="fas fa-volume-up" style="font-size:.8rem;"></i>
+            <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.05" value="1" oninput="onVolume(this.value)"/>
+          </div>
+          <div class="stream-badge hidden" id="streamBadge"><div class="dot"></div>LIVE</div>
+          <button class="vc-btn" id="inviteBtn" onclick="openInviteModal()" title="Share room"><i class="fas fa-share-alt"></i></button>
+          <button class="vc-btn" onclick="toggleFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
+        </div>
+        <!-- Viewer controls -->
+        <div id="viewerControls" style="display:none;align-items:center;gap:.7rem;width:100%;">
+          <div class="stream-badge"><div class="dot"></div>LIVE STREAM</div>
+          <div class="vol-wrap" style="margin-left:auto;">
+            <i class="fas fa-volume-up" style="font-size:.8rem;"></i>
+            <input type="range" class="vol-slider" id="viewerVol" min="0" max="1" step="0.05" value="1" oninput="setViewerVolume(this.value)"/>
+          </div>
+          <button class="vc-btn" onclick="toggleFullscreen()" title="Fullscreen"><i class="fas fa-expand"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side panel -->
+    <div class="room-side">
+      <div class="side-tabs">
+        <button class="side-tab on" id="tabChat" onclick="switchTab('chat')"><i class="fas fa-comments"></i> Chat</button>
+        <button class="side-tab" id="tabMembers" onclick="switchTab('members')"><i class="fas fa-users"></i> Members <span id="memberCount">(1)</span></button>
+      </div>
+      <!-- Chat -->
+      <div class="chat-panel show" id="chatPanel">
+        <div class="chat-msgs" id="chatMsgs"><div class="chat-empty"><i class="fas fa-comments" style="font-size:1.5rem;margin-bottom:.5rem;display:block;"></i>No messages yet</div></div>
+        <div class="chat-input-wrap">
+          <input class="chat-inp" type="text" id="chatInp" placeholder="Say something..." maxlength="300" onkeydown="if(event.key==='Enter')sendChatMsg()"/>
+          <button class="chat-send" onclick="sendChatMsg()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+      <!-- Members -->
+      <div class="members-panel" id="membersPanel"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /pageRoot -->
+
+<!-- Toast box -->
+<div id="toast-box"></div>
+
+<!-- File input (hidden) -->
+<input type="file" id="movieFileInp" accept="video/*" style="display:none" onchange="onFileSelected(event)"/>
+
+<!-- Invite modal -->
+<div class="modal-ov" id="inviteModal">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('inviteModal')"><i class="fas fa-times"></i></button>
+    <div class="modal-title"><i class="fas fa-share-alt" style="color:var(--accent);"></i> Invite Friends</div>
+    <p style="color:var(--textM);font-size:.84rem;margin-bottom:1rem;">Share this code or link to invite up to <strong style="color:var(--accent);">4 more friends</strong> (5 total).</p>
+    <div class="invite-box">
+      <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--textD);margin-bottom:.2rem;">6-DIGIT CODE</div>
+      <div class="invite-code" id="inviteCodeDisplay"></div>
+    </div>
+    <div class="inp-group">
+      <label><i class="fas fa-link"></i> Invite Link</label>
+      <div class="copy-row">
+        <input class="copy-inp" id="inviteLinkInp" type="text" readonly/>
+        <button class="btn btn-secondary btn-sm" onclick="copyInvite()"><i class="fas fa-copy"></i></button>
+      </div>
+    </div>
+    <button class="btn btn-primary w-full" onclick="closeModal('inviteModal')"><i class="fas fa-check"></i> Done</button>
+  </div>
+</div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getDatabase,ref,set,get,push,onValue,remove,update,onDisconnect}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const cfg={apiKey:"AIzaSyBeT226lzGP0ERDY7QZhKF8zfo0OwSGEZ4",authDomain:"fir-50409.firebaseapp.com",databaseURL:"https://fir-50409-default-rtdb.firebaseio.com",projectId:"fir-50409",storageBucket:"fir-50409.firebasestorage.app",messagingSenderId:"336958746825",appId:"1:336958746825:web:dc23031418217663b85d18"};
+const fbApp=initializeApp(cfg),auth=getAuth(fbApp),db=getDatabase(fbApp);
+
+// FIX 3: Better ICE servers for faster, more reliable connections
+const RTC_CFG={
+  iceServers:[
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'},
+    {urls:'stun:stun2.l.google.com:19302'},
+    {urls:'stun:stun3.l.google.com:19302'},
+    {urls:'stun:stun4.l.google.com:19302'},
+    {urls:'stun:stun.cloudflare.com:3478'},
+    {urls:'stun:stun.relay.metered.ca:80'},
+    {urls:'turn:global.relay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turn:global.relay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+  ],
+  iceCandidatePoolSize:10
+};
+const MAX_MEMBERS=5;
+
+let me=null,myP=null;
+let roomId=null,roomCode=null,isHost=false;
+let capturedStream=null,movieFile=null;
+let hostPCs=new Map(); // viewerUid -> RTCPeerConnection
+let viewerPC=null;
+let movieUnsubs=[];
+
+// ── Auth ──
+onAuthStateChanged(auth,async u=>{
+  if(!u){location.href='../pages/login.html';return;}
+  me=u;
+  const s=await get(ref(db,`users/${me.uid}`));
+  if(!s.exists()){location.href='../pages/create-username.html';return;}
+  myP=s.val();
+  const urlCode=new URLSearchParams(location.search).get('code');
+  if(urlCode){
+    document.getElementById('joinCodeInp').value=urlCode;
+    showJoin();
+  }
+  applyTheme();
+});
+
+function applyTheme(){document.documentElement.setAttribute('data-theme',localStorage.getItem('nc_theme')||'dark');}
+
+// ── Navigation ──
+window.showLanding=()=>{showEl('landing');hideEl('createRoom');hideEl('joinRoom');hideEl('roomView');};
+window.showCreate=()=>{hideEl('landing');showEl('createRoom');hideEl('joinRoom');hideEl('roomView');document.getElementById('movieNameInp').focus();};
+window.showJoin=()=>{hideEl('landing');hideEl('createRoom');showEl('joinRoom');hideEl('roomView');document.getElementById('joinCodeInp').focus();};
+
+function showEl(id){const el=document.getElementById(id);if(el){el.style.display='flex';}}
+function hideEl(id){const el=document.getElementById(id);if(el)el.style.display='none';}
+
+// ── Create Room ──
+window.createMovieRoom=async()=>{
+  const name=document.getElementById('movieNameInp').value.trim();
+  if(!name){toast('Enter a room name','err');return;}
+  const code=Math.floor(100000+Math.random()*900000).toString();
+  const rRef=push(ref(db,'movieRooms'));
+  roomId=rRef.key;roomCode=code;isHost=true;
+  await set(rRef,{name,hostUid:me.uid,hostName:myP.username,code,createdAt:Date.now(),status:'waiting',maxMembers:MAX_MEMBERS,members:{[me.uid]:{username:myP.username,avatar:myP.avatar||'',role:'host',joinedAt:Date.now()}}});
+  await set(ref(db,`movieCodes/${code}`),roomId);
+  onDisconnect(ref(db,`movieRooms/${roomId}`)).remove();
+  onDisconnect(ref(db,`movieCodes/${code}`)).remove();
+  enterRoom(roomId,code,name,true);
+};
+
+// ── Join Room ──
+window.joinMovieRoom=async()=>{
+  const code=document.getElementById('joinCodeInp').value.trim().toUpperCase();
+  if(!code){toast('Enter a join code','err');return;}
+  const cSnap=await get(ref(db,`movieCodes/${code}`));
+  if(!cSnap.exists()){toast('Room not found!','err');return;}
+  const rid=cSnap.val();
+  const rSnap=await get(ref(db,`movieRooms/${rid}`));
+  if(!rSnap.exists()){toast('Room no longer exists','err');return;}
+  const room=rSnap.val();
+  const memberCount=Object.keys(room.members||{}).length;
+  if(memberCount>=MAX_MEMBERS){toast('Room is full (max 5)','err');return;}
+  await update(ref(db,`movieRooms/${rid}/members`),{[me.uid]:{username:myP.username,avatar:myP.avatar||'',role:'viewer',joinedAt:Date.now()}});
+  onDisconnect(ref(db,`movieRooms/${rid}/members/${me.uid}`)).remove();
+  roomId=rid;roomCode=code;isHost=false;
+  enterRoom(rid,code,room.name,false);
+};
+
+// ── Enter Room ──
+function enterRoom(rid,code,name,host){
+  hideEl('landing');hideEl('createRoom');hideEl('joinRoom');
+  showEl('roomView');
+  document.getElementById('topBarTitle').innerHTML=`<i class="fas fa-film"></i> ${esc(name)}`;
+  document.getElementById('topBarCode').textContent=code;
+  document.getElementById('topBarCode').style.display='inline-flex';
+  document.getElementById('topBarRight').innerHTML=`<button class="btn btn-ghost btn-sm" onclick="leaveRoom()"><i class="fas fa-sign-out-alt"></i> Leave</button>`;
+  document.getElementById('inviteCodeDisplay').textContent=code;
+  document.getElementById('inviteLinkInp').value=`${location.origin}${location.pathname}?code=${code}`;
+
+  if(host){
+    document.getElementById('dropZone').style.display='flex';
+    document.getElementById('hostControls').style.display='flex';
+    document.getElementById('viewerControls').style.display='none';
+    document.getElementById('viewerWaiting').classList.add('hidden');
+    // FIX 1: Watch members — create PC for late joiners too
+    const u=onValue(ref(db,`movieRooms/${rid}/members`),snap=>{
+      if(!snap.exists())return;
+      const members=snap.val();
+      renderMembers(members);
+      // When streaming is active, create connections for ALL viewers including late joiners
+      if(capturedStream){
+        Object.keys(members).forEach(uid=>{
+          if(uid!==me.uid&&!hostPCs.has(uid))createHostPC(uid);
+        });
+      }
+    });
+    movieUnsubs.push(u);
+    // FIX 1: Also watch for viewer signaling requests (late joiners trigger re-offer)
+    const u2=onValue(ref(db,`movieSignaling/${rid}/joinRequests`),snap=>{
+      if(!snap.exists()||!capturedStream)return;
+      Object.keys(snap.val()).forEach(uid=>{
+        if(uid!==me.uid){
+          // Close old PC if exists, create fresh one
+          if(hostPCs.has(uid)){hostPCs.get(uid).close();hostPCs.delete(uid);}
+          remove(ref(db,`movieSignaling/${rid}/peers/${uid}`));
+          createHostPC(uid);
+        }
+      });
+      // Clear join requests after processing
+      remove(ref(db,`movieSignaling/${rid}/joinRequests`));
+    });
+    movieUnsubs.push(u2);
+  }else{
+    document.getElementById('dropZone').style.display='none';
+    document.getElementById('hostControls').style.display='none';
+    document.getElementById('viewerControls').style.display='flex';
+    document.getElementById('viewerWaiting').classList.remove('hidden');
+    const u=onValue(ref(db,`movieRooms/${rid}/members`),snap=>{
+      if(snap.exists())renderMembers(snap.val());
+    });
+    movieUnsubs.push(u);
+    // FIX 1: Check if stream is already running, then request connection
+    setupViewerPC(rid);
+  }
+  subChat(rid);
+}
+
+// ── Render Members ──
+function renderMembers(members){
+  const panel=document.getElementById('membersPanel');
+  const count=Object.keys(members).length;
+  document.getElementById('memberCount').textContent=`(${count})`;
+  panel.innerHTML=Object.entries(members).map(([uid,m])=>{
+    const ava=m.avatar||`https://ui-avatars.com/api/?name=${encodeURIComponent(m.username||'?')}&background=7C6FFF&color=fff&bold=true&size=80`;
+    return`<div class="member-row">
+      <div class="member-ava"><img src="${ava}" alt=""/></div>
+      <div class="member-name">${esc(m.username||'?')}${uid===me.uid?' (you)':''}</div>
+      <span class="member-role ${m.role==='host'?'role-host':'role-viewer'}">${m.role==='host'?'Host':'Viewer'}</span>
+      <div class="member-status"></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Host WebRTC ──
+async function createHostPC(viewerUid){
+  if(hostPCs.has(viewerUid)||!capturedStream)return;
+  const pc=new RTCPeerConnection(RTC_CFG);
+  hostPCs.set(viewerUid,pc);
+  capturedStream.getTracks().forEach(t=>pc.addTrack(t,capturedStream));
+  pc.onicecandidate=async e=>{
+    if(e.candidate)await push(ref(db,`movieSignaling/${roomId}/peers/${viewerUid}/hostCandidates`),e.candidate.toJSON());
+  };
+  // FIX 3: Auto-retry on connection failure
+  pc.onconnectionstatechange=()=>{
+    console.log(`[Host→${viewerUid}] state:`,pc.connectionState);
+    if(pc.connectionState==='failed'){
+      hostPCs.delete(viewerUid);
+      setTimeout(()=>{if(capturedStream&&!hostPCs.has(viewerUid))createHostPC(viewerUid);},2000);
+    }else if(['disconnected','closed'].includes(pc.connectionState)){
+      hostPCs.delete(viewerUid);
+    }
+  };
+  const offer=await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await set(ref(db,`movieSignaling/${roomId}/peers/${viewerUid}/offer`),{type:offer.type,sdp:offer.sdp});
+  const u=onValue(ref(db,`movieSignaling/${roomId}/peers/${viewerUid}/answer`),async snap=>{
+    if(!snap.exists())return;
+    if(pc.signalingState==='have-local-offer'){
+      try{await pc.setRemoteDescription(new RTCSessionDescription(snap.val()));}catch(e){console.warn('setRemote answer err',e);}
+    }
+  });
+  movieUnsubs.push(u);
+  const u2=onValue(ref(db,`movieSignaling/${roomId}/peers/${viewerUid}/viewerCandidates`),snap=>{
+    if(!snap.exists())return;
+    Object.values(snap.val()).forEach(async c=>{try{await pc.addIceCandidate(new RTCIceCandidate(c));}catch{}});
+  });
+  movieUnsubs.push(u2);
+}
+
+// ── Viewer WebRTC ──
+// FIX 1: Full renegotiation support — works for late joiners and reconnects
+async function setupViewerPC(rid){
+  // Close any existing PC
+  if(viewerPC){viewerPC.close();viewerPC=null;}
+  const pc=new RTCPeerConnection(RTC_CFG);
+  viewerPC=pc;
+  const remoteStream=new MediaStream();
+  const vidEl=document.getElementById('viewerVideo');
+  vidEl.srcObject=remoteStream;
+
+  pc.ontrack=e=>{
+    e.streams[0].getTracks().forEach(t=>{
+      // Avoid duplicate tracks
+      if(!remoteStream.getTracks().find(ex=>ex.id===t.id))remoteStream.addTrack(t);
+    });
+    // FIX 2: Show video + attempt autoplay immediately
+    vidEl.style.display='block';
+    document.getElementById('viewerWaiting').classList.add('hidden');
+    // Try muted autoplay first (always works), then unmute
+    vidEl.muted=true;
+    vidEl.play().then(()=>{
+      // After autoplay starts, unmute
+      setTimeout(()=>{vidEl.muted=false;},500);
+    }).catch(()=>{
+      // If autoplay blocked, show a click-to-play overlay
+      showClickToPlay();
+    });
+  };
+
+  pc.onicecandidate=async e=>{
+    if(e.candidate)await push(ref(db,`movieSignaling/${rid}/peers/${me.uid}/viewerCandidates`),e.candidate.toJSON());
+  };
+
+  // FIX 3: Auto-retry viewer on failure
+  pc.onconnectionstatechange=()=>{
+    console.log('[Viewer] state:',pc.connectionState);
+    if(pc.connectionState==='failed'){
+      toast('Connection lost, reconnecting...','warn');
+      setTimeout(()=>requestConnection(rid),2000);
+    }
+  };
+
+  // Listen for offer from host
+  const u=onValue(ref(db,`movieSignaling/${rid}/peers/${me.uid}/offer`),async snap=>{
+    if(!snap.exists())return;
+    // FIX 1: Allow renegotiation — handle offer in any state by resetting if needed
+    try{
+      if(pc.signalingState!=='stable'&&pc.signalingState!=='have-remote-offer'){
+        await pc.setLocalDescription({type:'rollback'});
+      }
+      await pc.setRemoteDescription(new RTCSessionDescription(snap.val()));
+      const answer=await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await set(ref(db,`movieSignaling/${rid}/peers/${me.uid}/answer`),{type:answer.type,sdp:answer.sdp});
+    }catch(err){
+      console.error('Viewer PC offer error',err);
+      // On error, try full reconnect
+      setTimeout(()=>requestConnection(rid),3000);
+    }
+  });
+  movieUnsubs.push(u);
+
+  const u2=onValue(ref(db,`movieSignaling/${rid}/peers/${me.uid}/hostCandidates`),snap=>{
+    if(!snap.exists())return;
+    Object.values(snap.val()).forEach(async c=>{try{await pc.addIceCandidate(new RTCIceCandidate(c));}catch{}});
+  });
+  movieUnsubs.push(u2);
+
+  // FIX 1: Signal the host that we want a connection (handles late joiners)
+  requestConnection(rid);
+}
+
+// FIX 1: Viewer signals host to create/re-create PC for them
+async function requestConnection(rid){
+  if(!rid||!me)return;
+  // Check if host is already streaming
+  const roomSnap=await get(ref(db,`movieRooms/${rid}`));
+  if(!roomSnap.exists())return;
+  const room=roomSnap.val();
+  if(room.status==='streaming'){
+    // Write a join request so host picks it up
+    await set(ref(db,`movieSignaling/${rid}/joinRequests/${me.uid}`),{uid:me.uid,ts:Date.now()});
+    toast('Connecting to stream...','info');
+  }
+}
+
+// FIX 2: Click-to-play overlay for browsers that block autoplay
+function showClickToPlay(){
+  const area=document.getElementById('videoArea');
+  let overlay=document.getElementById('ctpOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='ctpOverlay';
+    overlay.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.6);cursor:pointer;z-index:10;gap:.8rem;';
+    overlay.innerHTML=`<div style="width:72px;height:72px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;"><i class="fas fa-play"></i></div><div style="color:#fff;font-weight:700;font-size:.95rem;">Click to watch</div>`;
+    overlay.onclick=()=>{
+      const vid=document.getElementById('viewerVideo');
+      vid.muted=false;
+      vid.play().catch(()=>{vid.muted=true;vid.play();});
+      overlay.remove();
+    };
+    area.appendChild(overlay);
+  }
+}
+
+// ── File Handling ──
+window.onDragOver=e=>{e.preventDefault();document.getElementById('dropZone').classList.add('drag');};
+window.onDragLeave=()=>document.getElementById('dropZone').classList.remove('drag');
+window.onDrop=e=>{e.preventDefault();document.getElementById('dropZone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('video/'))loadFile(f);else toast('Please drop a video file','err');};
+window.onFileSelected=e=>{const f=e.target.files[0];if(f)loadFile(f);};
+
+function loadFile(file){
+  movieFile=file;
+  const url=URL.createObjectURL(file);
+  const hostVid=document.getElementById('hostVideo');
+  hostVid.src=url;
+  hostVid.load();
+  document.getElementById('dropZone').style.display='none';
+  document.getElementById('fileLoaded').style.display='flex';
+  document.getElementById('fileLoadedName').textContent=file.name;
+  document.getElementById('fileLoadedSize').textContent=formatBytes(file.size);
+  hostVid.ontimeupdate=()=>{
+    const cur=hostVid.currentTime,dur=hostVid.duration||0;
+    document.getElementById('currentTime').textContent=fmtTime(cur);
+    document.getElementById('seekBar').value=dur?((cur/dur)*100):0;
+    document.getElementById('seekBar').max=100;
+  };
+  hostVid.ondurationchange=()=>{document.getElementById('totalTime').textContent=fmtTime(hostVid.duration||0);};
+  hostVid.onplay=()=>document.getElementById('playPauseBtn').innerHTML='<i class="fas fa-pause"></i>';
+  hostVid.onpause=()=>document.getElementById('playPauseBtn').innerHTML='<i class="fas fa-play"></i>';
+  toast(`Loaded: ${file.name}`,'ok');
+}
+
+window.resetFile=()=>{
+  movieFile=null;
+  document.getElementById('hostVideo').src='';
+  document.getElementById('hostVideo').style.display='none';
+  document.getElementById('fileLoaded').style.display='none';
+  document.getElementById('dropZone').style.display='flex';
+  capturedStream=null;
+};
+
+// ── Start Streaming ──
+window.startStreaming=async()=>{
+  if(!movieFile){toast('Please select a video file first','err');return;}
+  const hostVid=document.getElementById('hostVideo');
+  try{
+    document.getElementById('fileLoaded').style.display='none';
+    hostVid.style.display='block';
+    await hostVid.play();
+    capturedStream=hostVid.captureStream?hostVid.captureStream():hostVid.mozCaptureStream?.();
+    if(!capturedStream){toast('Your browser does not support video streaming. Try Chrome.','err');return;}
+    await update(ref(db,`movieRooms/${roomId}`),{status:'streaming'});
+    document.getElementById('streamBadge').classList.remove('hidden');
+    document.getElementById('streamBtn')?.remove();
+    toast('🎬 Now streaming! Friends will see your video.','ok');
+    // FIX 1: Connect to ALL current members including anyone already waiting
+    const snap=await get(ref(db,`movieRooms/${roomId}/members`));
+    if(snap.exists()){
+      Object.keys(snap.val()).forEach(uid=>{if(uid!==me.uid)createHostPC(uid);});
+    }
+    // Also process any pending join requests
+    const jrSnap=await get(ref(db,`movieSignaling/${roomId}/joinRequests`));
+    if(jrSnap.exists()){
+      Object.keys(jrSnap.val()).forEach(uid=>{if(uid!==me.uid&&!hostPCs.has(uid))createHostPC(uid);});
+      remove(ref(db,`movieSignaling/${roomId}/joinRequests`));
+    }
+  }catch(err){
+    console.error(err);
+    toast('Could not start stream. Check permissions.','err');
+  }
+};
+
+// ── Video Controls (Host only — viewers cannot pause) ──
+window.togglePlay=()=>{const v=document.getElementById('hostVideo');v.paused?v.play():v.pause();};
+window.onSeek=pct=>{const v=document.getElementById('hostVideo');if(v.duration)v.currentTime=(pct/100)*v.duration;};
+window.onVolume=val=>{document.getElementById('hostVideo').volume=parseFloat(val);};
+window.toggleFullscreen=()=>{
+  const area=document.getElementById('videoArea');
+  if(!document.fullscreenElement)area.requestFullscreen?.();
+  else document.exitFullscreen?.();
+};
+
+// FIX 4: Viewer volume only (no pause for viewers — live stream only)
+window.setViewerVolume=val=>{
+  const vid=document.getElementById('viewerVideo');
+  if(vid){vid.volume=parseFloat(val);vid.muted=parseFloat(val)===0;}
+};
+
+// ── Invite ──
+window.openInviteModal=()=>document.getElementById('inviteModal').classList.add('open');
+window.closeModal=id=>document.getElementById(id).classList.remove('open');
+window.copyInvite=()=>{navigator.clipboard.writeText(document.getElementById('inviteLinkInp').value).then(()=>toast('Link copied!','ok'));};
+
+// ── Chat ──
+function subChat(rid){
+  const u=onValue(ref(db,`movieMessages/${rid}`),snap=>{
+    const wrap=document.getElementById('chatMsgs');
+    if(!snap.exists()){wrap.innerHTML='<div class="chat-empty"><i class="fas fa-comments" style="font-size:1.5rem;margin-bottom:.5rem;display:block;"></i>No messages yet</div>';return;}
+    const msgs=Object.values(snap.val()).sort((a,b)=>a.ts-b.ts);
+    wrap.innerHTML=msgs.map(m=>{
+      const own=m.uid===me.uid;
+      return`<div class="chat-msg${own?' own':''}">
+        <div class="chat-msg-name${own?' own':''}">${own?'You':esc(m.username)}</div>
+        <div class="chat-bbl">${esc(m.text)}</div>
+      </div>`;
+    }).join('');
+    wrap.scrollTop=wrap.scrollHeight;
+  });
+  movieUnsubs.push(u);
+}
+
+window.sendChatMsg=async()=>{
+  const inp=document.getElementById('chatInp');const text=inp.value.trim();
+  if(!text||!roomId)return;
+  inp.value='';
+  await push(ref(db,`movieMessages/${roomId}`),{uid:me.uid,username:myP.username,text,ts:Date.now()});
+};
+
+// ── Leave Room ──
+window.leaveRoom=async()=>{
+  if(!confirm('Leave the movie room?'))return;
+  cleanup();
+  if(isHost){
+    await remove(ref(db,`movieRooms/${roomId}`));
+    await remove(ref(db,`movieMessages/${roomId}`));
+    await remove(ref(db,`movieSignaling/${roomId}`));
+    if(roomCode)await remove(ref(db,`movieCodes/${roomCode}`));
+  }else{
+    await remove(ref(db,`movieRooms/${roomId}/members/${me.uid}`));
+    await remove(ref(db,`movieSignaling/${roomId}/peers/${me.uid}`));
+    await remove(ref(db,`movieSignaling/${roomId}/joinRequests/${me.uid}`));
+    if(viewerPC){viewerPC.close();viewerPC=null;}
+  }
+  roomId=null;roomCode=null;
+  document.getElementById('topBarCode').style.display='none';
+  document.getElementById('topBarRight').innerHTML=`<a href="../views/dashboard.html" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Back to Chat</a>`;
+  showLanding();
+  toast('Left the room','ok');
+};
+
+function cleanup(){
+  movieUnsubs.forEach(fn=>{try{fn();}catch{}});movieUnsubs=[];
+  hostPCs.forEach(pc=>pc.close());hostPCs.clear();
+  if(capturedStream){capturedStream.getTracks().forEach(t=>t.stop());capturedStream=null;}
+  const hv=document.getElementById('hostVideo');if(hv){hv.pause();hv.src='';}
+  const vv=document.getElementById('viewerVideo');if(vv){vv.srcObject=null;}
+}
+
+// ── Side tabs ──
+window.switchTab=tab=>{
+  document.getElementById('chatPanel').classList.toggle('show',tab==='chat');
+  document.getElementById('membersPanel').classList.toggle('show',tab==='members');
+  document.getElementById('tabChat').classList.toggle('on',tab==='chat');
+  document.getElementById('tabMembers').classList.toggle('on',tab==='members');
+};
+
+// ── Helpers ──
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtTime(s){if(!s||isNaN(s))return'0:00';const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m}:${sec.toString().padStart(2,'0')}`;}
+function formatBytes(b){if(b>=1073741824)return(b/1073741824).toFixed(1)+' GB';if(b>=1048576)return(b/1048576).toFixed(0)+' MB';return(b/1024).toFixed(0)+' KB';}
+function toast(msg,type='info'){const icons={ok:'fa-check-circle',err:'fa-exclamation-circle',info:'fa-info-circle',warn:'fa-exclamation-triangle'};const box=document.getElementById('toast-box');if(!box)return;const t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`<i class="fas ${icons[type]||'fa-info-circle'}"></i>${msg}`;box.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),260);},3400);}
+
+document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+</script>
+</body>
+</html>
